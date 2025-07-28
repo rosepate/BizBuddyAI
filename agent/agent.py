@@ -29,7 +29,7 @@ def load_agent():
                    print("⚠️ Expiry Date conversion error:", e)
 
            required_cols = ["Units_Sold", "Revenue", "Cost_Price", "Unit_Price", "Profit", "Product", "Location", "Inventory_After", "Date"]
-           missing_cols = [col for col in required_cols if col not df.columns]
+           missing_cols = [col for col in required_cols if col not in df.columns]
            if missing_cols:
                print(f"⚠️ Missing key columns: {missing_cols}")
 
