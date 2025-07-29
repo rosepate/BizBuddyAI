@@ -3,7 +3,6 @@ import pandas as pd
 import os
 import sys
 from dotenv import load_dotenv
-from models import SalesRecord
 from pydantic import ValidationError
 
 st.set_page_config(page_title="BizBuddy AI", page_icon="🧠", layout="wide")
