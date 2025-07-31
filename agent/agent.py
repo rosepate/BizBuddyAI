@@ -1,9 +1,15 @@
 from langchain_openai import ChatOpenAI
-from langchain_experimental.agents import create_pandas_dataframe_agent
+from langchain_experimental.agents import create_pandas_dataframe_agent  # <-- updated import
 from langchain.memory import ConversationBufferMemory
 import pandas as pd
 import os
 from dotenv import load_dotenv
+
+import sys
+sys.path.append(r'c:\Users\rozyp\OneDrive\Desktop\Bizbuddy\BizBuddyAI')
+
+# 1. Import your forecasting function
+from forecast.forecasting import get_sales_forecast, product_location_sequences
 
 def load_agent():
     load_dotenv()
@@ -14,7 +20,8 @@ def load_agent():
 
     sheet_url = "https://docs.google.com/spreadsheets/d/1ISS7IQOMPrAEqU7lnpJYM5W2zd4oynntnmMTiokiVNU/export?format=csv"
     df = pd.read_csv(sheet_url)
-    #print column names
+    #print column namesuv pip install -r requirements.txt
+
     print("📊 DataFrame loaded with columns:", df.columns.tolist()) 
 
 # 🛡️ Handle date column gracefully
@@ -63,7 +70,35 @@ def load_agent():
 
     return agent
 
+agent = load_agent()
+
+# 2. Add a function to handle user queries, including forecasting
+def agent_respond(user_query):
+    if "forecast" in user_query.lower():
+        for (product, location) in product_location_sequences.keys():
+            if product.lower() in user_query.lower() and location.lower() in user_query.lower():
+                try:
+                    dates, units = get_sales_forecast(product, location)
+                    # Handle both 1D and 2D units
+                    try:
+                        forecast_str = "\n".join([f"{d.date()}: {int(u[0])} units" for d, u in zip(dates, units)])
+                    except Exception:
+                        forecast_str = "\n".join([f"{d.date()}: {int(u)} units" for d, u in zip(dates, units)])
+                    return f"📈 7-day sales forecast for {product} at {location}:\n{forecast_str}"
+                except Exception as e:
+                    return f"Sorry, could not generate forecast for {product} at {location}: {e}"
+        return "Please specify both a valid product and location for forecasting."
+    else:
+        try:
+            response = agent.invoke(user_query)
+            return response
+        except Exception as e:
+            return f"Agent error: {e}"
+
 if __name__ == "__main__":
-    agent = load_agent()
-    response = agent.invoke("What are the top 3 selling products by total number of sale?")
-    print(response)
+    while True:
+        user_query = input("Ask your question (type 'exit' to quit): ")
+        if user_query.lower() == "exit":
+            break
+        answer = agent_respond(user_query)
+        print(answer)
