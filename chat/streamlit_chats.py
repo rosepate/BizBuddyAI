@@ -1,36 +1,43 @@
 import streamlit as st
+import sys
+sys.path.append(r'c:\Users\rozyp\OneDrive\Desktop\Bizbuddy\BizBuddyAI')
+
+from agent.agent import agent_respond, load_agent
 
 def chatbot_view(agent):
-           st.title("💬 BizBuddy AI Chatbot")
-           st.markdown("Chat naturally with your business data.")
+    st.title("💬 BizBuddy AI Chatbot")
+    st.markdown("Chat naturally with your business data.")
 
-           if st.button("🗑️ Clear Chat"):
-               st.session_state.chat_history = []
-               if "agent" in st.session_state:
-                   del st.session_state.agent
-               from agent.agent import load_agent
-               st.session_state.agent = load_agent()
-               st.rerun()
+    # Initialize agent in session state only once
+    if "agent" not in st.session_state:
+        st.session_state.agent = load_agent()
 
-           if "chat_history" not in st.session_state:
-               st.session_state.chat_history = []
+    if st.button("🗑️ Clear Chat"):
+        st.session_state.chat_history = []
+        # Optionally reload agent if you want a fresh memory
+        st.session_state.agent = load_agent()
+        st.rerun()
 
-           for role, message in st.session_state.chat_history:
-               with st.chat_message(role):
-                   st.markdown(message)
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
 
-           user_input = st.chat_input("Ask your question...")
+    for role, message in st.session_state.chat_history:
+        with st.chat_message(role):
+            st.markdown(message)
 
-           if user_input:
-               st.session_state.chat_history.append(("user", user_input))
-               with st.chat_message("user"):
-                   st.markdown(user_input)
+    user_input = st.chat_input("Ask your question...")
 
-               with st.chat_message("assistant"):
-                   with st.spinner("Thinking..."):
-                       try:
-                           response = agent.run(user_input)
-                           st.markdown(response)
-                           st.session_state.chat_history.append(("assistant", response))
-                       except Exception as e:
-                           st.error(f"⚠️ Error: {str(e)}")
+    if user_input:
+        st.session_state.chat_history.append(("user", user_input))
+        with st.chat_message("user"):
+            st.markdown(user_input)
+
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                try:
+                    # Pass the agent instance if needed
+                    response = agent_respond(user_input)
+                    st.markdown(response)
+                    st.session_state.chat_history.append(("assistant", response))
+                except Exception as e:
+                    st.error(f"⚠️ Error: {str(e)}")
