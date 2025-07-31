@@ -67,14 +67,7 @@ def dashboard_view(df):
                             labels={"x": "Product", "y": "Inventory After"}, title="Inventory Status by Product")
     st.plotly_chart(fig_inventory, use_container_width=True)    
 
-    # Product with low inventory
-    st.subheader("⚠️ Products with Low Inventory")
-    low_inventory = df[df["Inventory_After"] < 20]
-    if not low_inventory.empty:
-        low_inventory = low_inventory.groupby("Product_ID")["Inventory_After"].min().sort_values().reset_index().head(10)
-        st.table(low_inventory)
-    else:
-        st.write("No products with low inventory.")
+
 
     # --- SALES FORECAST SECTION ---
     st.subheader("🔮 Sales Forecast (7 Days Ahead)")
