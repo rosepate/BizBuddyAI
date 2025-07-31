@@ -101,3 +101,35 @@ def dashboard_view(df):
                 st.write(forecast_df)
             except Exception as e:
                 st.error(f"Could not generate forecast: {e}")
+
+    from forecast.anomaly import detect_z_score_anomalies
+
+    st.subheader("🚨 Anomaly Detection")
+
+    # Let user select product and location
+    product = st.selectbox("Select Product for Anomaly Detection", df["Product"].unique())
+    location = st.selectbox("Select Location", df["Location"].unique())
+
+    # Filter data for the selected product and location
+    filtered = df[(df["Product"] == product) & (df["Location"] == location)]
+
+    if not filtered.empty:
+        for col in ['Units_Sold', 'Inventory_After']:
+            if col in filtered.columns:
+                anomalies = detect_z_score_anomalies(filtered, column=col, threshold=3)
+                detected = anomalies[anomalies['Anomaly']]
+                st.markdown(f"**Anomalies in {col}:**")
+            if detected.empty:
+                st.success(f"No anomalies detected in {col}.")
+            else:
+                st.dataframe(detected[["Date", col, "z_score"]])
+    else:
+        st.info("No data for this product/location.")
+
+
+
+
+
+
+
+
