@@ -2,6 +2,11 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 
+import sys
+sys.path.append(r'c:\Users\rozyp\OneDrive\Desktop\Bizbuddy\BizBuddyAI')
+# Import your forecast function and product-location dictionary
+from forecast.forecasting import get_sales_forecast, product_location_sequences
+
 def dashboard_view(df):
     st.title("📊 BizBuddy Sales Dashboard")
     st.markdown("This dashboard shows key metrics and trends.")
@@ -11,19 +16,12 @@ def dashboard_view(df):
         # Load Data from URL
         sheet_url = "https://docs.google.com/spreadsheets/d/1ISS7IQOMPrAEqU7lnpJYM5W2zd4oynntnmMTiokiVNU/export?format=csv"
         df = pd.read_csv(sheet_url)
-        
-        # Convert date column if found
         date_cols = [col for col in df.columns if 'date' in col.lower()]
         if date_cols:
             df[date_cols[0]] = pd.to_datetime(df[date_cols[0]])
         return df
 
     df = load_data()
-
-    # Streamlit UI setup
-
-    st.title("📊Dashboard")
-    st.markdown("This dashboard shows key metrics and trends.")
 
     # KPI Cards
     total_revenue = df["Revenue"].sum()
@@ -69,11 +67,37 @@ def dashboard_view(df):
                             labels={"x": "Product", "y": "Inventory After"}, title="Inventory Status by Product")
     st.plotly_chart(fig_inventory, use_container_width=True)    
 
-    #Product with low inventory
+    # Product with low inventory
     st.subheader("⚠️ Products with Low Inventory")
-    low_inventory = df[df["Inventory_After"] < 10]
+    low_inventory = df[df["Inventory_After"] < 20]
     if not low_inventory.empty:
-        low_inventory = low_inventory.groupby("Product")["Inventory_After"].min().sort_values().reset_index().head(10)
+        low_inventory = low_inventory.groupby("Product_ID")["Inventory_After"].min().sort_values().reset_index().head(10)
         st.table(low_inventory)
     else:
         st.write("No products with low inventory.")
+
+    # --- SALES FORECAST SECTION ---
+    st.subheader("🔮 Sales Forecast (7 Days Ahead)")
+
+    # Get all unique products and locations from your product_location_sequences
+    product_list = sorted(set([k[0] for k in product_location_sequences.keys()]))
+    selected_product = st.selectbox("Select Product for Forecast", product_list)
+
+    # Filter locations for the selected product
+    filtered_locations = sorted([loc for (prod, loc) in product_location_sequences.keys() if prod == selected_product])
+    selected_location = st.selectbox("Select Location", filtered_locations)
+
+    if not filtered_locations:
+        st.warning("No locations available for this product.")
+    elif st.button("Show Forecast"):
+        with st.spinner("Generating forecast..."):
+            try:
+                forecast_dates, forecast_units = get_sales_forecast(selected_product, selected_location)
+                forecast_df = pd.DataFrame({
+                    "Date": forecast_dates,
+                    "Forecast Units": forecast_units.flatten()
+                })
+                st.line_chart(forecast_df.set_index("Date"))
+                st.write(forecast_df)
+            except Exception as e:
+                st.error(f"Could not generate forecast: {e}")
