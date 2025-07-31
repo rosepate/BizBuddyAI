@@ -105,6 +105,23 @@ def agent_respond(user_query):
     except Exception as e:
         return f"Agent error: {e}"
 
+from forecast.auto_reorder_ml import load_data as load_reorder_data, create_features, train_reorder_model, suggest_reorder
+# Load and train reorder model ONCE (at module level)
+_reorder_df = create_features(load_reorder_data())
+_reorder_clf = train_reorder_model(_reorder_df)
+
+def agent_respond(user_query):
+    # ...existing logic...
+    if "reorder" in user_query.lower():
+        # Try to extract product and location from the query
+        for product in _reorder_df['Product'].unique():
+            for location in _reorder_df['Location'].unique():
+                if product.lower() in user_query.lower() and location.lower() in user_query.lower():
+                    return suggest_reorder(_reorder_df, _reorder_clf, product, location)
+        return "Please specify both a valid product and location for reorder suggestion."
+
+# For testing purposes, you can run this script directly
+# This allows you to interact with the agent in a console environment
 if __name__ == "__main__":
     while True:
         user_query = input("Ask your question (type 'exit' to quit): ")
